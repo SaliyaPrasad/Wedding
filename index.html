@@ -40,6 +40,8 @@ body{
 }
 #music-fab:hover{background:var(--gold2);transform:scale(1.08)}
 #music-fab svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#music-fab.playing{animation:musicPulse 1.8s ease-in-out infinite}
+@keyframes musicPulse{0%,100%{box-shadow:0 4px 16px rgba(180,140,40,.35)}50%{box-shadow:0 4px 22px rgba(180,140,40,.7)}}
 
 /* ── FIXED GOLD FRAME ── */
 .frame-border{
@@ -474,7 +476,7 @@ body.intro-active{overflow:hidden;height:100vh}
 
 <!-- ══════════ INTRO VIDEO ══════════ -->
 <div id="intro-screen">
-  <video id="intro-video" autoplay muted playsinline preload="auto">
+  <video id="intro-video" autoplay playsinline preload="auto">
     <source src="https://res.cloudinary.com/deghlkqbx/video/upload/f_auto,q_auto,vc_auto/v1780777245/iiuvpanpprarwsi5y8se.mp4" type="video/mp4">
   </video>
   <button id="intro-sound" title="Unmute" onclick="toggleIntroSound()">
@@ -730,11 +732,11 @@ body.intro-active{overflow:hidden;height:100vh}
     <div class="ft-divider-line"></div>
   </div>
   <div class="ft-contacts">
-    <a href="tel:+94777654321" class="ft-btn">
+    <a href="tel:+94710931773" class="ft-btn">
       <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-1.07-8.6A2 2 0 014 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14z"/></svg>
       Call Saliya
     </a>
-    <a href="tel:+94771234567" class="ft-btn">
+    <a href="tel:+94714047376" class="ft-btn">
       <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-1.07-8.6A2 2 0 014 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14z"/></svg>
       Call Imashi
     </a>
@@ -743,10 +745,12 @@ body.intro-active{overflow:hidden;height:100vh}
 </footer>
 
 <script>
-/* ── INTRO VIDEO ── */
+/* ── INTRO VIDEO (autoplay with sound, graceful fallback) ── */
 const introScreen=document.getElementById('intro-screen');
 const introVideo=document.getElementById('intro-video');
 let introEnded=false;
+let needsVideoUnmute=false;
+
 function endIntro(){
   if(introEnded)return;
   introEnded=true;
@@ -754,17 +758,36 @@ function endIntro(){
   document.body.classList.remove('intro-active');
   setTimeout(()=>{introScreen.style.display='none';introVideo.pause();},900);
 }
-function toggleIntroSound(){
-  introVideo.muted=!introVideo.muted;
+function setIntroSoundIcon(muted){
   const icon=document.getElementById('ic-intro-sound');
-  icon.innerHTML=introVideo.muted
+  icon.innerHTML=muted
     ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/>'
     : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/>';
+}
+function toggleIntroSound(){
+  introVideo.muted=!introVideo.muted;
+  if(!introVideo.muted)introVideo.play().catch(()=>{});
+  needsVideoUnmute=false;
+  setIntroSoundIcon(introVideo.muted);
 }
 introVideo.addEventListener('ended',endIntro);
 introVideo.addEventListener('error',endIntro);
 /* safety fallback in case video fails to load or play */
 setTimeout(()=>{if(!introEnded)endIntro()},20000);
+
+/* Try real autoplay WITH sound first */
+introVideo.muted=false;
+setIntroSoundIcon(false);
+const introPlay=introVideo.play();
+if(introPlay!==undefined){
+  introPlay.catch(()=>{
+    /* browser blocked audible autoplay — fall back to muted autoplay */
+    introVideo.muted=true;
+    setIntroSoundIcon(true);
+    needsVideoUnmute=true;
+    introVideo.play().catch(()=>{});
+  });
+}
 
 /* ── COUNTDOWN ── */
 function tick(){
@@ -778,26 +801,95 @@ function tick(){
 }
 tick();setInterval(tick,1000);
 
-/* ── MUSIC ── */
-let ac,playing=false,gn;
-function toggleMusic(){
+/* ── BACKGROUND MUSIC (soft looping romantic melody, auto-starts) ── */
+let ac,gn,playing=false,musicTimer=null,needsMusicStart=false;
+
+/* gentle romantic arpeggio, slow tempo, soft volume */
+const romanticMelody=[
+  {f:392.00,d:1.1},{f:493.88,d:1.1},{f:587.33,d:1.5},{f:493.88,d:1.1},
+  {f:440.00,d:1.1},{f:523.25,d:1.5},{f:659.25,d:1.8},{f:587.33,d:1.5},
+  {f:523.25,d:1.1},{f:440.00,d:1.1},{f:392.00,d:1.8},{f:0,d:1.2}
+];
+
+function ensureAudioCtx(){
   if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();
-  if(playing){gn.gain.linearRampToValueAtTime(0,ac.currentTime+.3);playing=false;return;}
-  gn=ac.createGain();gn.gain.setValueAtTime(0,ac.currentTime);
-  gn.gain.linearRampToValueAtTime(.06,ac.currentTime+.5);
-  gn.connect(ac.destination);
-  const melody=[523.25,659.25,783.99,1046.5,783.99,659.25,523.25,440,523.25];
-  const dur=[.4,.4,.4,.6,.4,.4,.4,.4,.8];
-  let t=ac.currentTime;
-  melody.forEach((f,i)=>{
-    const o=ac.createOscillator();
-    o.type='sine';o.frequency.value=f;
-    o.connect(gn);o.start(t);o.stop(t+dur[i]*.92);
-    t+=dur[i];
-  });
-  playing=true;
-  setTimeout(()=>{if(playing){playing=false}},7000);
+  if(ac.state==='suspended')ac.resume();
 }
+function playNote(freq,startTime,dur){
+  if(!freq)return;
+  const o=ac.createOscillator();
+  const ng=ac.createGain();
+  o.type='sine';
+  o.frequency.value=freq;
+  ng.gain.setValueAtTime(0,startTime);
+  ng.gain.linearRampToValueAtTime(.05,startTime+.25);
+  ng.gain.linearRampToValueAtTime(0,startTime+dur);
+  o.connect(ng);ng.connect(gn);
+  o.start(startTime);o.stop(startTime+dur+.05);
+}
+function scheduleLoop(){
+  if(!playing)return;
+  let t=ac.currentTime+.1;
+  romanticMelody.forEach(n=>{playNote(n.f,t,n.d);t+=n.d;});
+  const total=romanticMelody.reduce((s,n)=>s+n.d,0);
+  musicTimer=setTimeout(scheduleLoop,total*1000);
+}
+function updateMusicIcon(isPlaying){
+  document.getElementById('music-fab').classList.toggle('playing',isPlaying);
+}
+function startMusic(){
+  ensureAudioCtx();
+  if(playing)return;
+  playing=true;
+  gn=ac.createGain();
+  gn.gain.setValueAtTime(0,ac.currentTime);
+  gn.gain.linearRampToValueAtTime(1,ac.currentTime+.6);
+  gn.connect(ac.destination);
+  scheduleLoop();
+  updateMusicIcon(true);
+  needsMusicStart=false;
+}
+function stopMusic(){
+  playing=false;
+  clearTimeout(musicTimer);
+  if(gn)gn.gain.linearRampToValueAtTime(0,ac.currentTime+.4);
+  updateMusicIcon(false);
+}
+function toggleMusic(){
+  if(playing)stopMusic();else startMusic();
+}
+
+/* Try to auto-start background music immediately */
+(function attemptMusicAutoplay(){
+  ensureAudioCtx();
+  if(ac.state==='running'){
+    startMusic();
+  }else{
+    needsMusicStart=true;
+  }
+})();
+
+/* If audible autoplay was blocked (video and/or music), unmute/start
+   on the very first user interaction anywhere on the page */
+function unlockMediaOnInteraction(){
+  if(needsVideoUnmute){
+    introVideo.muted=false;
+    introVideo.play().catch(()=>{});
+    setIntroSoundIcon(false);
+    needsVideoUnmute=false;
+  }
+  if(needsMusicStart||(ac&&ac.state==='suspended')){
+    startMusic();
+  }
+  document.removeEventListener('click',unlockMediaOnInteraction);
+  document.removeEventListener('touchstart',unlockMediaOnInteraction);
+  document.removeEventListener('keydown',unlockMediaOnInteraction);
+  document.removeEventListener('scroll',unlockMediaOnInteraction);
+}
+document.addEventListener('click',unlockMediaOnInteraction,{passive:true});
+document.addEventListener('touchstart',unlockMediaOnInteraction,{passive:true});
+document.addEventListener('keydown',unlockMediaOnInteraction,{passive:true});
+document.addEventListener('scroll',unlockMediaOnInteraction,{passive:true});
 
 /* ── RSVP ── */
 let choice='yes',guests=1;
@@ -812,20 +904,23 @@ function adjGuest(d){
   document.getElementById('g-val').textContent=guests;
 }
 function submitRsvp(){
-  const n=document.getElementById('f-name').value.trim();
-  if(!n){document.getElementById('f-name').focus();return;}
+ const n=document.getElementById('f-name').value.trim();
+ if(!n){document.getElementById('f-name').focus();return;}
+ const btn=document.querySelector('.rsvp-submit');
+ btn.disabled=true;
+ btn.style.transform='scale(1.05)';
+ btn.style.boxShadow='0 0 30px rgba(201,168,76,.8)';
+ setTimeout(()=>{
+  const msg=choice==='yes'
+   ?`💛 Wedding RSVP\n\nGuest Name: ${n}\nResponse: Joyfully Accept ✅\nNumber of Guests: ${guests}`
+   :`💛 Wedding RSVP\n\nGuest Name: ${n}\nResponse: Regretfully Decline ❌`;
   document.getElementById('rsvp-form').style.display='none';
   const th=document.getElementById('rsvp-thanks');
-  const hd=document.getElementById('thanks-head');
-  const bd=document.getElementById('thanks-body');
-  if(choice==='yes'){
-    hd.textContent='We\'re Overjoyed!';
-    bd.textContent=`Thank you, ${n}! We can't wait to celebrate with you${guests>1?' and your '+guests+' guests':''}. 💛`;
-  }else{
-    hd.textContent='We\'ll Miss You!';
-    bd.textContent=`Thank you for letting us know, ${n}. You'll be in our hearts on that special day. 🙏`;
-  }
+  document.getElementById('thanks-head').textContent=choice==='yes'?'Opening WhatsApp...':'Opening WhatsApp...';
+  document.getElementById('thanks-body').textContent='Please tap Send in WhatsApp to complete your RSVP.';
   th.style.display='block';
+  window.open('https://wa.me/94714047376?text='+encodeURIComponent(msg),'_blank');
+ },700);
 }
 
 /* ── CALENDAR ── */
