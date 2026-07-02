@@ -263,36 +263,6 @@ body{
   margin-top:.25rem;
 }
 
-/* ── GALLERY ── */
-#gallery{background:#fffdf5}
-.gallery-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:6px;
-}
-@media(max-width:500px){.gallery-grid{grid-template-columns:repeat(2,1fr)}}
-.gal-item{
-  aspect-ratio:1;overflow:hidden;cursor:pointer;
-  background:var(--cream3);position:relative;
-}
-.gal-item img{
-  width:100%;height:100%;object-fit:cover;
-  transition:transform .5s ease;
-  filter:sepia(12%) saturate(.9);
-}
-.gal-item:hover img{transform:scale(1.06);filter:none}
-
-/* lightbox */
-#lb{display:none;position:fixed;inset:0;background:rgba(10,6,2,.93);
-  z-index:9999;align-items:center;justify-content:center}
-#lb.open{display:flex}
-#lb img{max-width:92vw;max-height:88vh;object-fit:contain}
-#lb-close{
-  position:absolute;top:18px;right:22px;
-  background:none;border:none;color:var(--gold3);
-  font-size:2.2rem;cursor:pointer;line-height:1;
-}
-
 /* ── LOCATION ── */
 #location{background:var(--cream)}
 .venue-head{text-align:center;margin-bottom:1.2rem}
@@ -451,15 +421,67 @@ footer{
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .75s ease,transform .75s ease}
 .reveal.in{opacity:1;transform:none}
 
+/* ── INTRO VIDEO SPLASH ── */
+body.intro-active{overflow:hidden;height:100vh}
+#intro-screen{
+  position:fixed;inset:0;z-index:99999;
+  background:#000;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  opacity:1;transition:opacity .9s ease;
+}
+#intro-screen.intro-hide{opacity:0;pointer-events:none}
+#intro-video{
+  width:100%;height:100%;
+  object-fit:cover;display:block;
+}
+#intro-skip{
+  position:absolute;bottom:28px;right:28px;z-index:2;
+  padding:10px 22px;
+  background:rgba(0,0,0,.3);
+  border:1px solid rgba(232,212,154,.5);
+  color:var(--gold3);
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;cursor:pointer;
+  backdrop-filter:blur(4px);
+  transition:all .2s;
+}
+#intro-skip:hover{background:rgba(0,0,0,.5);border-color:var(--gold)}
+#intro-sound{
+  position:absolute;bottom:28px;left:28px;z-index:2;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(0,0,0,.3);
+  border:1px solid rgba(232,212,154,.5);
+  color:var(--gold3);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;backdrop-filter:blur(4px);
+  transition:all .2s;
+}
+#intro-sound:hover{background:rgba(0,0,0,.5);border-color:var(--gold)}
+#intro-sound svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .frame-border,.frame-corner{display:none}
   .hero-floral{width:80px}
   #hero{padding:90px 16px 70px}
+  #intro-skip{bottom:20px;right:20px;padding:9px 18px;font-size:9px}
+  #intro-sound{bottom:20px;left:20px;width:38px;height:38px}
 }
 </style>
 </head>
-<body>
+<body class="intro-active">
+
+<!-- ══════════ INTRO VIDEO ══════════ -->
+<div id="intro-screen">
+  <video id="intro-video" autoplay muted playsinline preload="auto">
+    <source src="https://res.cloudinary.com/deghlkqbx/video/upload/f_auto,q_auto,vc_auto/v1780777245/iiuvpanpprarwsi5y8se.mp4" type="video/mp4">
+  </video>
+  <button id="intro-sound" title="Unmute" onclick="toggleIntroSound()">
+    <svg id="ic-intro-sound" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
+  </button>
+  <button id="intro-skip" onclick="endIntro()">Skip Intro</button>
+</div>
 
 <!-- Gold frame corners -->
 <div class="frame-border"></div>
@@ -622,41 +644,6 @@ footer{
   </div>
 </section>
 
-<!-- ══════════ GALLERY ══════════ -->
-<section id="gallery" style="padding:72px 24px;background:#fffdf5">
-  <div style="max-width:900px;margin:0 auto">
-    <div class="reveal">
-      <p class="sec-eyebrow">Gallery</p>
-      <h2 class="sec-title">Our Moments</h2>
-      <div class="sec-rule"><div class="sec-rule-line"></div><div class="sec-rule-dot"></div><div class="sec-rule-line"></div></div>
-    </div>
-    <div class="gallery-grid reveal">
-      <div class="gal-item" onclick="openLb(this)">
-        <img src="https://invitation.lk/royal-monarch/G1.webp" alt="Gallery 1" loading="lazy">
-      </div>
-      <div class="gal-item" onclick="openLb(this)">
-        <img src="https://invitation.lk/royal-monarch/G2.webp" alt="Gallery 2" loading="lazy">
-      </div>
-      <div class="gal-item" onclick="openLb(this)">
-        <img src="https://invitation.lk/royal-monarch/G3.webp" alt="Gallery 3" loading="lazy">
-      </div>
-      <div class="gal-item" onclick="openLb(this)">
-        <img src="https://invitation.lk/royal-monarch/G4.webp" alt="Gallery 4" loading="lazy">
-      </div>
-      <div class="gal-item" onclick="openLb(this)">
-        <img src="https://invitation.lk/royal-monarch/G5.webp" alt="Gallery 5" loading="lazy">
-      </div>
-      <div class="gal-item" onclick="openLb(this)">
-        <img src="https://invitation.lk/royal-monarch/G6.webp" alt="Gallery 6" loading="lazy">
-      </div>
-    </div>
-  </div>
-</section>
-<div id="lb" onclick="closeLb()">
-  <button id="lb-close" onclick="closeLb()">×</button>
-  <img id="lb-img" src="" alt="">
-</div>
-
 <!-- ══════════ LOCATION ══════════ -->
 <section id="location" style="padding:72px 24px;background:var(--cream)">
   <div style="max-width:900px;margin:0 auto">
@@ -756,6 +743,29 @@ footer{
 </footer>
 
 <script>
+/* ── INTRO VIDEO ── */
+const introScreen=document.getElementById('intro-screen');
+const introVideo=document.getElementById('intro-video');
+let introEnded=false;
+function endIntro(){
+  if(introEnded)return;
+  introEnded=true;
+  introScreen.classList.add('intro-hide');
+  document.body.classList.remove('intro-active');
+  setTimeout(()=>{introScreen.style.display='none';introVideo.pause();},900);
+}
+function toggleIntroSound(){
+  introVideo.muted=!introVideo.muted;
+  const icon=document.getElementById('ic-intro-sound');
+  icon.innerHTML=introVideo.muted
+    ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/>'
+    : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/>';
+}
+introVideo.addEventListener('ended',endIntro);
+introVideo.addEventListener('error',endIntro);
+/* safety fallback in case video fails to load or play */
+setTimeout(()=>{if(!introEnded)endIntro()},20000);
+
 /* ── COUNTDOWN ── */
 function tick(){
   const t=new Date('2026-08-19T09:30:00')-new Date();
@@ -817,14 +827,6 @@ function submitRsvp(){
   }
   th.style.display='block';
 }
-
-/* ── GALLERY LIGHTBOX ── */
-function openLb(el){
-  const img=el.querySelector('img');if(!img)return;
-  document.getElementById('lb-img').src=img.src;
-  document.getElementById('lb').classList.add('open');
-}
-function closeLb(){document.getElementById('lb').classList.remove('open')}
 
 /* ── CALENDAR ── */
 function addCal(){
